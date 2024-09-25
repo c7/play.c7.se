@@ -1,4 +1,4 @@
-TITLE="spelsylt11"
+TITLE="Spelsylt \#11 (@peterhellberg)"
 NAME=spelsylt11
 ARCHIVE=${NAME}.zip
 GAME_URL=https://${HOSTNAME}/${NAME}
