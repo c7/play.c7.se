@@ -32,7 +32,7 @@ bundle: all
 	@mkdir -p bundle/${NAME}
 	@cp -r build.zig* src bundle/${NAME}/
 	@zip -juq bundle/${ARCHIVE} bundle/${NAME}.html bundle/${NAME}.elf bundle/${NAME}.exe bundle/${NAME}.wasm 
-	@cd bundle; zip -uq ${ARCHIVE} ${NAME}/*; cd ..
+	@cd bundle; zip -uq ${ARCHIVE} ${NAME}/* ${NAME}/src/*; cd ..
 	@echo "✔ Updated bundle/${ARCHIVE}"
 
 .PHONY: backup
