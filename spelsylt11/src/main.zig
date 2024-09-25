@@ -23,10 +23,13 @@ export fn update() void {
         const x: i32 = @intFromFloat(80 + (cos(t) * (r * 4)));
         const y: i32 = @intFromFloat(80 + (sin(t + r / 3) * (r * 4)));
 
-        w4.color(if (i % 2 == 0) 0x40 else if (i == 13) 0x31 else 0x20);
+        w4.color(if (i % 2 == 0) 0x40 else if (i == 13) 0x30 else 0x20);
         w4.circle(x, y, @intFromFloat(r * 1.9));
 
         if (i == 13) {
+            w4.color(0x21);
+            w4.circle(x, y, @intFromFloat(r * 1.5));
+
             w4.color(3);
             w4.text("11!", x - 10, y - 4);
         }
