@@ -152,25 +152,7 @@ const Snake = struct {
         { // Detect apple
             if (s.eat(a)) {
                 s.score.increment();
-
-                // mark occupied cells on a grid
-                var grid = [_]bool{false} ** N;
-                var it = s.iter();
-                while (it.next()) |n| {
-                    grid[size * @as(usize, @intCast(n.x)) + @as(usize, @intCast(n.y))] = true;
-                }
-
-                // choose free cell index
-                var f = random.uintLessThan(usize, N - s.length());
-                for (grid, 0..) |occupied, i| {
-                    if (occupied) continue;
-                    if (f == 0) {
-                        a.x = @intCast(i % size);
-                        a.y = @intCast(i / size);
-                        return;
-                    }
-                    f -= 1;
-                }
+                a.init(s);
             } else {
                 s.moveTail();
             }
@@ -346,9 +328,15 @@ const Apple = struct {
     x: i32 = 0,
     y: i32 = 0,
 
-    fn init(a: *Apple) void {
+    fn init(a: *Apple, s: *Snake) void {
         a.x = @mod(random.int(i32), size);
         a.y = @mod(random.int(i32), size);
+
+        var it = s.iter();
+
+        while (it.next()) |n| {
+            if (a.x == n.x and a.y == n.y) a.init(s);
+        }
     }
 
     fn draw(a: *Apple) void {
@@ -404,8 +392,8 @@ const Game = struct {
             _ = random.intRangeAtMost(usize, g.disk.starts, g.disk.starts + g.disk.starts);
         }
 
-        g.apple.init();
         g.snake.init();
+        g.apple.init(&g.snake);
     }
 
     fn update(g: *Game) void {
