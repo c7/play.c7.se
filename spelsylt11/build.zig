@@ -13,6 +13,12 @@ pub fn build(b: *std.Build) !void {
 
     exe.root_module.addImport("w4", b.dependency("w4", .{}).module("w4"));
 
+    exe.addIncludePath(b.path("include"));
+    exe.addCSourceFile(.{
+        .file = b.path("include/w4on2.c"),
+        //.flags = &.{"-D__W4ON2_WASM4_TRACEF"},
+    });
+
     exe.root_module.export_symbol_names = &[_][]const u8{
         "start",
         "update",

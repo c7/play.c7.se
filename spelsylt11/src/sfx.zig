@@ -1,39 +1,21 @@
 const w4 = @import("w4");
 
+pub const player = @import("player.zig");
+
 pub fn up(vol: i32) void {
-    w4.tone(
-        frequency(40, 930),
-        duration(0, 0, 15, 0),
-        volume(92, vol),
-        flags(2, 0, 0),
-    );
+    w4.tone(frequency(40, 930), duration(0, 0, 15, 0), volume(92, vol), flags(2, 0, 0));
 }
 
 pub fn down(vol: i32) void {
-    w4.tone(
-        frequency(360, 90),
-        duration(0, 0, 5, 0),
-        volume(42, vol),
-        flags(2, 0, 0),
-    );
+    w4.tone(frequency(360, 90), duration(0, 0, 5, 0), volume(42, vol), flags(2, 0, 0));
 }
 
 pub fn left(vol: i32) void {
-    w4.tone(
-        frequency(100, 528),
-        duration(0, 5, 10, 5),
-        volume(10, vol),
-        flags(1, 0, 0),
-    );
+    w4.tone(frequency(100, 528), duration(0, 5, 10, 5), volume(10, vol), flags(1, 0, 0));
 }
 
 pub fn right(vol: i32) void {
-    w4.tone(
-        frequency(100, 528),
-        duration(0, 5, 10, 5),
-        volume(10, vol),
-        flags(1, 0, 0),
-    );
+    w4.tone(frequency(100, 528), duration(0, 5, 10, 5), volume(10, vol), flags(1, 0, 0));
 }
 
 fn frequency(freq1: i32, freq2: i32) u32 {

@@ -1,19 +1,10 @@
-const std = @import("std");
 const w4 = @import("w4");
 
-const sfx = @import("sfx.zig");
-
+const std = @import("std");
 const sin = std.math.sin;
 const cos = std.math.cos;
 
-export fn start() void {
-    w4.palette(.{
-        0x372a39,
-        0xf5e9bf,
-        0xaa644d,
-        0x788374,
-    });
-}
+const sfx = @import("sfx.zig");
 
 var t: f32 = 0;
 var d: f32 = 0.025;
@@ -43,8 +34,21 @@ fn input() void {
     if (m.held(w4.MOUSE_RIGHT)) t -= 0.1;
 }
 
+export fn start() void {
+    w4.palette(.{
+        0x372a39,
+        0xf5e9bf,
+        0xaa644d,
+        0x788374,
+    });
+
+    sfx.player.start();
+}
+
 export fn update() void {
     input();
+
+    sfx.player.tick();
 
     t += d;
 
