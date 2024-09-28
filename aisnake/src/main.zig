@@ -2,7 +2,7 @@ const w4 = @import("w4");
 const std = @import("std");
 const sfx = @import("sfx.zig");
 
-const DELAY = 6;
+const DELAY = 4;
 const SIZE = 20;
 const CELL = w4.SCREEN_SIZE / SIZE;
 const N = SIZE * SIZE;
@@ -243,13 +243,13 @@ const Score = struct {
     }
 
     fn increment(s: *Score) void {
-        s.now += 1;
+        s.now += if (ai) 1 else 10;
 
         sfx.score(20);
     }
 
     fn draw(s: *Score, b: *w4.Button) void {
-        if (!b.held(0, w4.BUTTON_1)) return;
+        if (!b.held(0, w4.BUTTON_2)) return;
 
         w4.color(3);
         text("Now {d}", 3, 3, .{s.now});
@@ -333,7 +333,7 @@ fn input() void {
     if (button.pressed(0, w4.BUTTON_DOWN)) snake.d = .down;
     if (button.pressed(0, w4.BUTTON_LEFT)) snake.d = .left;
     if (button.pressed(0, w4.BUTTON_RIGHT)) snake.d = .right;
-    if (button.released(0, w4.BUTTON_2)) ai = !ai;
+    if (button.released(0, w4.BUTTON_1)) ai = !ai;
 }
 
 fn draw() void {
