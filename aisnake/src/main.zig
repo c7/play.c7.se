@@ -3,21 +3,20 @@ const std = @import("std");
 const sfx = @import("sfx.zig");
 
 const DELAY = 4;
-const SIZE = 20;
+const SIZE = 20; // 20 or 32
 const CELL = w4.SCREEN_SIZE / SIZE;
 const N = SIZE * SIZE;
 
 const Snake = struct {
-    x: i32 = 0,
-    y: i32 = 0,
-    d: Dir = .up,
+    x: u8 = 0,
+    y: u8 = 0,
+    d: u2 = 0,
 
     score: Score = .{},
 
     nodes: [N]Node = undefined,
     head: usize = 0,
     tail: usize = 0,
-    eaten: bool = false,
 
     fn crash(s: *Snake) void {
         sfx.crash(100);
@@ -26,19 +25,21 @@ const Snake = struct {
     }
 
     fn init(s: *Snake) void {
-        s.x = @mod(random.int(i32), (SIZE / 2)) + (SIZE / 4);
-        s.y = @mod(random.int(i32), (SIZE / 2)) + (SIZE / 4);
-        s.d = random.enumValue(Dir);
+        s.x = @mod(random.int(u8), (SIZE / 2)) + (SIZE / 4);
+        s.y = @mod(random.int(u8), (SIZE / 2)) + (SIZE / 4);
+        s.d = random.int(u2);
 
         s.nodes = .{Node.init(s.x, s.y, s.d)} ** N;
+        s.head = 0;
+        s.tail = 0;
+
         s.score.init();
     }
 
     fn eat(s: *Snake, a: *Apple) bool {
         const h = &s.nodes[s.head];
-        s.eaten = h.x == a.x and h.y == a.y;
 
-        return s.eaten;
+        return h.x == a.x and h.y == a.y;
     }
 
     pub fn length(s: Snake) usize {
@@ -78,20 +79,20 @@ const Snake = struct {
 
     fn move(s: *Snake) void {
         switch (s.d) {
-            .up => s.y -= 1,
-            .down => s.y += 1,
-            .left => s.x -= 1,
-            .right => s.x += 1,
+            0 => s.y -= 1,
+            1 => s.y += 1,
+            2 => s.x -= 1,
+            3 => s.x += 1,
         }
 
         s.moveHead(s.d);
     }
 
-    fn moveHead(self: *Snake, dir: Dir) void {
+    fn moveHead(self: *Snake, d: u2) void {
         const h = &self.nodes[self.head];
 
         self.head = (self.head + 1) % N;
-        self.nodes[self.head] = h.copy(dir);
+        self.nodes[self.head] = h.copy(d);
     }
 
     fn moveTail(s: *Snake) void {
@@ -100,19 +101,19 @@ const Snake = struct {
 
     fn left(s: *Snake) void {
         s.d = switch (s.d) {
-            .up => .left,
-            .down => .right,
-            .left => .down,
-            .right => .up,
+            0 => 2,
+            1 => 3,
+            2 => 1,
+            3 => 0,
         };
     }
 
     fn right(s: *Snake) void {
         s.d = switch (s.d) {
-            .up => .right,
-            .down => .left,
-            .left => .up,
-            .right => .down,
+            0 => 3,
+            1 => 2,
+            2 => 0,
+            3 => 1,
         };
     }
 
@@ -137,22 +138,22 @@ const Snake = struct {
         var ty: i32 = s.y;
 
         switch (s.d) {
-            .up => switch (t) {
+            0 => switch (t) {
                 .forward => ty -= 1,
                 .left => tx -= 1,
                 .right => tx += 1,
             },
-            .down => switch (t) {
+            1 => switch (t) {
                 .forward => ty += 1,
                 .left => tx += 1,
                 .right => tx -= 1,
             },
-            .left => switch (t) {
+            2 => switch (t) {
                 .forward => tx -= 1,
                 .left => ty += 1,
                 .right => ty -= 1,
             },
-            .right => switch (t) {
+            3 => switch (t) {
                 .forward => tx += 1,
                 .left => ty -= 1,
                 .right => ty += 1,
@@ -202,8 +203,6 @@ const Snake = struct {
     }
 
     fn draw(s: *Snake, b: *w4.Button) void {
-        s.score.draw(b);
-
         rect(s.x, s.y, 3);
 
         var it = s.iter();
@@ -215,26 +214,28 @@ const Snake = struct {
 
             if (i == s.head) {
                 set(s.x, s.y, 1, switch (s.d) {
-                    .up => .{ .x = CELL / 2, .y = 1 },
-                    .down => .{ .x = CELL / 2, .y = CELL - 2 },
-                    .left => .{ .x = 1, .y = CELL / 2 },
-                    .right => .{ .x = CELL - 2, .y = CELL / 2 },
+                    0 => .{ .x = CELL / 2, .y = 1 },
+                    1 => .{ .x = CELL / 2, .y = CELL - 2 },
+                    2 => .{ .x = 1, .y = CELL / 2 },
+                    3 => .{ .x = CELL - 2, .y = CELL / 2 },
                 });
             } else {
                 set(n.x, n.y, 1, switch (n.d) {
-                    .down => .{ .x = CELL / 2, .y = 1 },
-                    .up => .{ .x = CELL / 2, .y = CELL - 2 },
-                    .right => .{ .x = 1, .y = CELL / 2 },
-                    .left => .{ .x = CELL - 2, .y = CELL / 2 },
+                    1 => .{ .x = CELL / 2, .y = 1 },
+                    0 => .{ .x = CELL / 2, .y = CELL - 2 },
+                    3 => .{ .x = 1, .y = CELL / 2 },
+                    2 => .{ .x = CELL - 2, .y = CELL / 2 },
                 });
             }
         }
+
+        s.score.draw(b);
     }
 };
 
 const Score = struct {
-    now: i32 = 0,
-    old: i32 = 0,
+    now: u16 = 0,
+    old: u16 = 0,
 
     fn init(s: *Score) void {
         if (s.old < s.now) s.old = s.now;
@@ -249,23 +250,21 @@ const Score = struct {
     }
 
     fn draw(s: *Score, b: *w4.Button) void {
-        if (!b.held(0, w4.BUTTON_2)) return;
+        w4.color(if (b.held(0, w4.BUTTON_2) or @mod(time, 3) == 0) 4 else 3);
+        text("\x86{d}", 2, 2, .{s.old});
 
-        w4.color(3);
-        text("Now {d}", 3, 3, .{s.now});
-
-        w4.color(4);
-        text("Old {d}", 3, 13, .{s.old});
+        w4.color(if (b.held(0, w4.BUTTON_2) or @mod(time, 3) == 0) 3 else 4);
+        text("\x85{d}", 2, 12, .{s.now});
     }
 };
 
 const Apple = struct {
-    x: i32 = 0,
-    y: i32 = 0,
+    x: u8 = 0,
+    y: u8 = 0,
 
     fn init(a: *Apple, s: *Snake) void {
-        a.x = @mod(random.int(i32), SIZE);
-        a.y = @mod(random.int(i32), SIZE);
+        a.x = @mod(random.int(u8), SIZE);
+        a.y = @mod(random.int(u8), SIZE);
 
         var it = s.iter();
 
@@ -277,15 +276,18 @@ const Apple = struct {
     fn draw(a: *Apple) void {
         rect(a.x, a.y, 4);
 
+        const x: i32 = @intCast(a.x);
+        const y: i32 = @intCast(a.y);
+
         w4.color(3);
-        w4.pixel(a.x * CELL + CELL / 2, a.y * CELL);
+        w4.pixel(x * CELL + CELL / 2, y * CELL);
 
         w4.color(1);
-        w4.pixel(a.x * CELL + 1, a.y * CELL + 1);
-        w4.pixel(a.x * CELL + 1, (a.y + 1) * CELL - 2);
+        w4.pixel(x * CELL + 1, y * CELL + 1);
+        w4.pixel(x * CELL + 1, (y + 1) * CELL - 2);
 
-        w4.pixel((a.x + 1) * CELL - 2, a.y * CELL + 1);
-        w4.pixel((a.x + 1) * CELL - 2, (a.y + 1) * CELL - 2);
+        w4.pixel((x + 1) * CELL - 2, y * CELL + 1);
+        w4.pixel((x + 1) * CELL - 2, (y + 1) * CELL - 2);
     }
 };
 
@@ -298,7 +300,7 @@ var disk: Disk = .{ .starts = 0 };
 var time: i32 = 0;
 
 var apple: Apple = .{};
-var snake: Snake = .{ .x = 10, .y = 10, .d = .up };
+var snake: Snake = .{};
 
 var ai = true;
 
@@ -329,10 +331,10 @@ export fn start() void {
 }
 
 fn input() void {
-    if (button.pressed(0, w4.BUTTON_UP)) snake.d = .up;
-    if (button.pressed(0, w4.BUTTON_DOWN)) snake.d = .down;
-    if (button.pressed(0, w4.BUTTON_LEFT)) snake.d = .left;
-    if (button.pressed(0, w4.BUTTON_RIGHT)) snake.d = .right;
+    if (button.pressed(0, w4.BUTTON_UP)) snake.d = 0;
+    if (button.pressed(0, w4.BUTTON_DOWN)) snake.d = 1;
+    if (button.pressed(0, w4.BUTTON_LEFT)) snake.d = 2;
+    if (button.pressed(0, w4.BUTTON_RIGHT)) snake.d = 3;
     if (button.released(0, w4.BUTTON_1)) ai = !ai;
 }
 
@@ -363,14 +365,14 @@ export fn update() void {
     draw();
 }
 
-fn rect(x: i32, y: i32, c: u16) void {
+fn rect(x: u8, y: u8, c: u16) void {
     w4.color(c);
-    w4.rect(x * CELL + 1, y * CELL + 1, CELL - 2, CELL - 2);
+    w4.rect(@as(i32, @intCast(x)) * CELL + 1, @as(i32, @intCast(y)) * CELL + 1, CELL - 2, CELL - 2);
 }
 
-fn set(x: i32, y: i32, c: u16, o: Vec) void {
+fn set(x: u8, y: u8, c: u16, o: Vec) void {
     w4.color(c);
-    w4.pixel(x * CELL + o.x, y * CELL + o.y);
+    w4.pixel(@as(i32, @intCast(x)) * CELL + o.x, @as(i32, @intCast(y)) * CELL + o.y);
 }
 
 fn text(comptime fmt: []const u8, x: i32, y: i32, args: anytype) void {
@@ -417,20 +419,20 @@ const Disk = struct {
 };
 
 const Node = struct {
-    x: i32,
-    y: i32,
-    d: Dir,
+    x: u8,
+    y: u8,
+    d: u2,
 
-    pub fn init(x: i32, y: i32, dir: Dir) Node {
-        return .{ .x = x, .y = y, .d = dir };
+    pub fn init(x: u8, y: u8, d: u2) Node {
+        return .{ .x = x, .y = y, .d = d };
     }
 
-    fn copy(self: Node, d: Dir) Node {
+    fn copy(self: Node, d: u2) Node {
         return switch (d) {
-            .up => init(self.x, self.y - 1, d),
-            .down => init(self.x, self.y + 1, d),
-            .left => init(self.x - 1, self.y, d),
-            .right => init(self.x + 1, self.y, d),
+            0 => init(self.x, self.y - 1, d),
+            1 => init(self.x, self.y + 1, d),
+            2 => init(self.x - 1, self.y, d),
+            3 => init(self.x + 1, self.y, d),
         };
     }
 };
