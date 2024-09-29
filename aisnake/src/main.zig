@@ -1,6 +1,7 @@
 const w4 = @import("w4");
 const std = @import("std");
 const sfx = @import("sfx.zig");
+const pal = @import("pal.zig");
 
 const DELAY = 4;
 const SIZE = 20; // 20 or 32
@@ -8,9 +9,9 @@ const CELL = w4.SCREEN_SIZE / SIZE;
 const N = SIZE * SIZE;
 
 const Snake = struct {
-    x: u8 = 0,
-    y: u8 = 0,
-    d: u2 = 0,
+    x: i8 = 0,
+    y: i8 = 0,
+    d: Dir = .up,
 
     score: Score = .{},
 
@@ -25,9 +26,9 @@ const Snake = struct {
     }
 
     fn init(s: *Snake) void {
-        s.x = @mod(random.int(u8), (SIZE / 2)) + (SIZE / 4);
-        s.y = @mod(random.int(u8), (SIZE / 2)) + (SIZE / 4);
-        s.d = random.int(u2);
+        s.x = @mod(random.int(i8), (SIZE / 2)) + (SIZE / 4);
+        s.y = @mod(random.int(i8), (SIZE / 2)) + (SIZE / 4);
+        s.d = random.enumValue(Dir);
 
         s.nodes = .{Node.init(s.x, s.y, s.d)} ** N;
         s.head = 0;
@@ -79,16 +80,16 @@ const Snake = struct {
 
     fn move(s: *Snake) void {
         switch (s.d) {
-            0 => s.y -= 1,
-            1 => s.y += 1,
-            2 => s.x -= 1,
-            3 => s.x += 1,
+            .up => s.y -= 1,
+            .down => s.y += 1,
+            .left => s.x -= 1,
+            .right => s.x += 1,
         }
 
         s.moveHead(s.d);
     }
 
-    fn moveHead(self: *Snake, d: u2) void {
+    fn moveHead(self: *Snake, d: Dir) void {
         const h = &self.nodes[self.head];
 
         self.head = (self.head + 1) % N;
@@ -101,19 +102,19 @@ const Snake = struct {
 
     fn left(s: *Snake) void {
         s.d = switch (s.d) {
-            0 => 2,
-            1 => 3,
-            2 => 1,
-            3 => 0,
+            .up => .left,
+            .down => .right,
+            .left => .down,
+            .right => .up,
         };
     }
 
     fn right(s: *Snake) void {
         s.d = switch (s.d) {
-            0 => 3,
-            1 => 2,
-            2 => 0,
-            3 => 1,
+            .up => .right,
+            .down => .left,
+            .left => .up,
+            .right => .down,
         };
     }
 
@@ -133,34 +134,34 @@ const Snake = struct {
         }
     }
 
-    fn state(s: *Snake, a: *Apple, t: Try) i32 {
-        var tx: i32 = s.x;
-        var ty: i32 = s.y;
+    fn state(s: *Snake, a: *Apple, t: Try) i16 {
+        var tx: i16 = s.x;
+        var ty: i16 = s.y;
 
         switch (s.d) {
-            0 => switch (t) {
+            .up => switch (t) {
                 .forward => ty -= 1,
                 .left => tx -= 1,
                 .right => tx += 1,
             },
-            1 => switch (t) {
+            .down => switch (t) {
                 .forward => ty += 1,
                 .left => tx += 1,
                 .right => tx -= 1,
             },
-            2 => switch (t) {
+            .left => switch (t) {
                 .forward => tx -= 1,
                 .left => ty += 1,
                 .right => ty -= 1,
             },
-            3 => switch (t) {
+            .right => switch (t) {
                 .forward => tx += 1,
                 .left => ty -= 1,
                 .right => ty += 1,
             },
         }
 
-        var reward: i32 = 0;
+        var reward: i16 = 0;
 
         { // Detect walls
             if (tx < 0 or tx > SIZE - 1 or ty < 0 or ty > SIZE - 1) {
@@ -175,13 +176,13 @@ const Snake = struct {
         }
 
         { // Move towards apple
-            const dx: u32 = @abs(s.x - a.x);
-            const dy: u32 = @abs(s.y - a.y);
-            const tdx: u32 = @abs(tx - a.x);
-            const tdy: u32 = @abs(ty - a.y);
+            const dx: u16 = @abs(s.x - a.x);
+            const dy: u16 = @abs(s.y - a.y);
+            const tdx: u16 = @abs(tx - a.x);
+            const tdy: u16 = @abs(ty - a.y);
 
             if (tdx < dx or tdy < dy) {
-                reward += 1;
+                reward += 5;
             }
         }
 
@@ -214,17 +215,17 @@ const Snake = struct {
 
             if (i == s.head) {
                 set(s.x, s.y, 1, switch (s.d) {
-                    0 => .{ .x = CELL / 2, .y = 1 },
-                    1 => .{ .x = CELL / 2, .y = CELL - 2 },
-                    2 => .{ .x = 1, .y = CELL / 2 },
-                    3 => .{ .x = CELL - 2, .y = CELL / 2 },
+                    .up => .{ .x = CELL / 2, .y = 1 },
+                    .down => .{ .x = CELL / 2, .y = CELL - 2 },
+                    .left => .{ .x = 1, .y = CELL / 2 },
+                    .right => .{ .x = CELL - 2, .y = CELL / 2 },
                 });
             } else {
                 set(n.x, n.y, 1, switch (n.d) {
-                    1 => .{ .x = CELL / 2, .y = 1 },
-                    0 => .{ .x = CELL / 2, .y = CELL - 2 },
-                    3 => .{ .x = 1, .y = CELL / 2 },
-                    2 => .{ .x = CELL - 2, .y = CELL / 2 },
+                    .up => .{ .x = CELL / 2, .y = CELL - 2 },
+                    .down => .{ .x = CELL / 2, .y = 1 },
+                    .left => .{ .x = CELL - 2, .y = CELL / 2 },
+                    .right => .{ .x = 1, .y = CELL / 2 },
                 });
             }
         }
@@ -235,10 +236,9 @@ const Snake = struct {
 
 const Score = struct {
     now: u16 = 0,
-    old: u16 = 0,
 
     fn init(s: *Score) void {
-        if (s.old < s.now) s.old = s.now;
+        disk.update(s.now);
 
         s.now = 0;
     }
@@ -246,12 +246,16 @@ const Score = struct {
     fn increment(s: *Score) void {
         s.now += if (ai) 1 else 10;
 
+        disk.update(s.now);
+
         sfx.score(20);
     }
 
     fn draw(s: *Score, b: *w4.Button) void {
+        disk.load();
+
         w4.color(if (b.held(0, w4.BUTTON_2) or @mod(time, 3) == 0) 4 else 3);
-        text("\x86{d}", 2, 2, .{s.old});
+        text("\x86{d}", 2, 2, .{disk.high()});
 
         w4.color(if (b.held(0, w4.BUTTON_2) or @mod(time, 3) == 0) 3 else 4);
         text("\x85{d}", 2, 12, .{s.now});
@@ -259,12 +263,12 @@ const Score = struct {
 };
 
 const Apple = struct {
-    x: u8 = 0,
-    y: u8 = 0,
+    x: i16 = 0,
+    y: i16 = 0,
 
     fn init(a: *Apple, s: *Snake) void {
-        a.x = @mod(random.int(u8), SIZE);
-        a.y = @mod(random.int(u8), SIZE);
+        a.x = @mod(random.int(i16), SIZE);
+        a.y = @mod(random.int(i16), SIZE);
 
         var it = s.iter();
 
@@ -296,7 +300,7 @@ const random = prng.random();
 
 var button: w4.Button = .{};
 
-var disk: Disk = .{ .starts = 0 };
+var disk: Disk = .{};
 var time: i32 = 0;
 
 var apple: Apple = .{};
@@ -318,12 +322,19 @@ fn grid() void {
 }
 
 export fn start() void {
-    w4.palette(.{ 0x111111, 0x141414, 0x00FF00, 0xFF0000 });
+    w4.palette(pal.classy);
 
-    _ = disk.increment();
+    disk.increment();
+    disk.load();
 
-    for (disk.starts) |_| {
-        _ = random.intRangeAtMost(usize, disk.starts, disk.starts + disk.starts);
+    const starts = disk.starts();
+
+    for (starts) |_| {
+        _ = random.intRangeAtMost(
+            usize,
+            starts,
+            starts + starts + disk.high(),
+        );
     }
 
     snake.init();
@@ -331,10 +342,10 @@ export fn start() void {
 }
 
 fn input() void {
-    if (button.pressed(0, w4.BUTTON_UP)) snake.d = 0;
-    if (button.pressed(0, w4.BUTTON_DOWN)) snake.d = 1;
-    if (button.pressed(0, w4.BUTTON_LEFT)) snake.d = 2;
-    if (button.pressed(0, w4.BUTTON_RIGHT)) snake.d = 3;
+    if (button.pressed(0, w4.BUTTON_UP)) snake.d = .up;
+    if (button.pressed(0, w4.BUTTON_DOWN)) snake.d = .down;
+    if (button.pressed(0, w4.BUTTON_LEFT)) snake.d = .left;
+    if (button.pressed(0, w4.BUTTON_RIGHT)) snake.d = .right;
     if (button.released(0, w4.BUTTON_1)) ai = !ai;
 }
 
@@ -349,10 +360,10 @@ export fn update() void {
     input();
 
     if (ai) {
-        w4.PALETTE[3] = 0xFF0000;
+        w4.palette(pal.classy);
         snake.ai(&apple);
     } else {
-        w4.PALETTE[3] = 0xFFFF00;
+        w4.palette(pal.classy_alt);
     }
 
     time += 1;
@@ -365,12 +376,12 @@ export fn update() void {
     draw();
 }
 
-fn rect(x: u8, y: u8, c: u16) void {
+fn rect(x: i16, y: i16, c: u16) void {
     w4.color(c);
     w4.rect(@as(i32, @intCast(x)) * CELL + 1, @as(i32, @intCast(y)) * CELL + 1, CELL - 2, CELL - 2);
 }
 
-fn set(x: u8, y: u8, c: u16, o: Vec) void {
+fn set(x: i16, y: i16, c: u16, o: Vec) void {
     w4.color(c);
     w4.pixel(@as(i32, @intCast(x)) * CELL + o.x, @as(i32, @intCast(y)) * CELL + o.y);
 }
@@ -400,39 +411,58 @@ pub const Vec = struct {
 };
 
 const Disk = struct {
-    starts: usize,
+    data: [2]u16 = .{ 0, 0 },
 
-    fn increment(d: *Disk) usize {
-        _ = d.load();
-        d.starts += 1;
-        _ = d.save();
-        return d.starts;
+    fn update(d: *Disk, score: u16) void {
+        if (d.data[1] > score) return;
+
+        d.load();
+        d.data[1] = score;
+        d.save();
     }
 
-    fn load(d: *Disk) u32 {
-        return w4.diskr(@ptrCast(d), @sizeOf(@TypeOf(d)));
+    fn increment(d: *Disk) void {
+        d.load();
+        d.data[0] += 1;
+        d.save();
     }
 
-    fn save(d: *Disk) u32 {
-        return w4.diskw(@ptrCast(d), @sizeOf(@TypeOf(d)));
+    fn starts(d: *Disk) u16 {
+        return d.data[0];
+    }
+
+    fn high(d: *Disk) u16 {
+        return d.data[1];
+    }
+
+    fn load(d: *Disk) void {
+        _ = w4.diskr(@ptrCast(d), @sizeOf(@TypeOf(d)));
+    }
+
+    fn save(d: *Disk) void {
+        if (snake.score.now > d.data[1]) {
+            d.data[1] = snake.score.now;
+        }
+
+        _ = w4.diskw(@ptrCast(d), @sizeOf(@TypeOf(d)));
     }
 };
 
 const Node = struct {
-    x: u8,
-    y: u8,
-    d: u2,
+    x: i8,
+    y: i8,
+    d: Dir,
 
-    pub fn init(x: u8, y: u8, d: u2) Node {
+    pub fn init(x: i8, y: i8, d: Dir) Node {
         return .{ .x = x, .y = y, .d = d };
     }
 
-    fn copy(self: Node, d: u2) Node {
+    fn copy(self: Node, d: Dir) Node {
         return switch (d) {
-            0 => init(self.x, self.y - 1, d),
-            1 => init(self.x, self.y + 1, d),
-            2 => init(self.x - 1, self.y, d),
-            3 => init(self.x + 1, self.y, d),
+            .up => init(self.x, self.y - 1, d),
+            .down => init(self.x, self.y + 1, d),
+            .left => init(self.x - 1, self.y, d),
+            .right => init(self.x + 1, self.y, d),
         };
     }
 };
