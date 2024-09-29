@@ -227,6 +227,33 @@ const Snake = struct {
                     .left => .{ .x = CELL - 2, .y = CELL / 2 },
                     .right => .{ .x = 1, .y = CELL / 2 },
                 });
+
+                const x: i32 = @intCast(n.x);
+                const y: i32 = @intCast(n.y);
+
+                w4.color(1);
+
+                switch (n.d) {
+                    .up => {
+                        w4.pixel(x * CELL + 1, y * CELL + 1); // top left
+                        w4.pixel((x + 1) * CELL - 2, y * CELL + 1); // top right
+                    },
+                    .down => {
+                        w4.pixel(x * CELL + 1, (y + 1) * CELL - 2); // bottom left
+                        w4.pixel((x + 1) * CELL - 2, (y + 1) * CELL - 2); // bottom right
+                    },
+                    .left => {
+                        w4.pixel(x * CELL + 1, y * CELL + 1); // top left
+                        w4.pixel(x * CELL + 1, (y + 1) * CELL - 2); // bottom left
+                    },
+                    .right => {
+                        w4.pixel((x + 1) * CELL - 2, y * CELL + 1); // top right
+                        w4.pixel((x + 1) * CELL - 2, (y + 1) * CELL - 2); // bottom right
+                    },
+                }
+
+                w4.color(4);
+                w4.circle(x * CELL + 4, y * CELL + 4, 2);
             }
         }
 
@@ -286,6 +313,10 @@ const Apple = struct {
         w4.color(3);
         w4.pixel(x * CELL + CELL / 2, y * CELL);
 
+        w4.pixel(x * CELL + CELL / 2, y * CELL + 1);
+        w4.pixel(x * CELL + CELL / 2 + 1, y * CELL);
+        w4.pixel(x * CELL + CELL / 2 + 1, y * CELL - 1);
+
         w4.color(1);
         w4.pixel(x * CELL + 1, y * CELL + 1);
         w4.pixel(x * CELL + 1, (y + 1) * CELL - 2);
@@ -321,9 +352,11 @@ fn grid() void {
     }
 }
 
-export fn start() void {
-    w4.palette(pal.classy);
+fn palette() [4]u32 {
+    return if (ai) pal.classy else pal.classy_alt;
+}
 
+export fn start() void {
     disk.increment();
     disk.load();
 
@@ -337,6 +370,8 @@ export fn start() void {
         );
     }
 
+    w4.palette(palette());
+
     snake.init();
     apple.init(&snake);
 }
@@ -346,7 +381,12 @@ fn input() void {
     if (button.pressed(0, w4.BUTTON_DOWN)) snake.d = .down;
     if (button.pressed(0, w4.BUTTON_LEFT)) snake.d = .left;
     if (button.pressed(0, w4.BUTTON_RIGHT)) snake.d = .right;
-    if (button.released(0, w4.BUTTON_1)) ai = !ai;
+    if (button.released(0, w4.BUTTON_1)) toggleAi();
+}
+
+fn toggleAi() void {
+    ai = !ai;
+    w4.palette(palette());
 }
 
 fn draw() void {
@@ -359,12 +399,7 @@ export fn update() void {
     button.update();
     input();
 
-    if (ai) {
-        w4.palette(pal.classy);
-        snake.ai(&apple);
-    } else {
-        w4.palette(pal.classy_alt);
-    }
+    if (ai) snake.ai(&apple);
 
     time += 1;
 
