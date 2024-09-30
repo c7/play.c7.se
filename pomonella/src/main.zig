@@ -4,11 +4,11 @@ const sfx = @import("sfx.zig");
 const pal = @import("pal.zig");
 
 const DELAY = 4;
-const SIZE = 20; // 20 or 32
+const SIZE = 20;
 const CELL = w4.SCREEN_SIZE / SIZE;
 const N = SIZE * SIZE;
 
-const Snake = struct {
+const Worm = struct {
     x: i8 = 0,
     y: i8 = 0,
     d: Dir = .up,
@@ -16,10 +16,10 @@ const Snake = struct {
     score: Score = .{},
 
     nodes: [N]Node = undefined,
-    head: usize = 0,
+    head: usize = 1,
     tail: usize = 0,
 
-    fn crash(s: *Snake) void {
+    fn crash(s: *Worm) void {
         sfx.crash(100);
 
         aiEnabled = true;
@@ -27,85 +27,85 @@ const Snake = struct {
         s.init();
     }
 
-    fn init(s: *Snake) void {
+    fn init(w: *Worm) void {
         w4.palette(palette());
 
-        s.x = @mod(random.int(i8), (SIZE / 2)) + (SIZE / 4);
-        s.y = @mod(random.int(i8), (SIZE / 2)) + (SIZE / 4);
-        s.d = random.enumValue(Dir);
+        w.x = @mod(random.int(i8), (SIZE / 2)) + (SIZE / 4);
+        w.y = @mod(random.int(i8), (SIZE / 2)) + (SIZE / 4);
+        w.d = random.enumValue(Dir);
 
-        s.nodes = .{Node.init(s.x, s.y, s.d)} ** N;
-        s.head = 0;
-        s.tail = 0;
+        w.nodes = .{Node.init(w.x, w.y, w.d)} ** N;
+        w.head = 0;
+        w.tail = 0;
 
-        s.score.init();
+        w.score.init();
     }
 
-    fn eat(s: *Snake, a: *Apple) bool {
-        const h = &s.nodes[s.head];
+    fn eat(w: *Worm, a: *Apple) bool {
+        const h = &w.nodes[w.head];
 
         return h.x == a.x and h.y == a.y;
     }
 
-    pub fn length(s: Snake) usize {
-        return ((s.head + N + 1) - s.tail) % N;
+    pub fn length(w: Worm) usize {
+        return ((w.head + N + 1) - w.tail) % N;
     }
 
-    pub fn iter(self: *const Snake) Iter {
-        return .{ .snake = self, .i = self.tail };
+    pub fn iter(worm: *const Worm) Iter {
+        return .{ .worm = worm, .i = worm.tail };
     }
 
-    fn detect(s: *Snake, a: *Apple) void {
+    fn detect(w: *Worm, a: *Apple) void {
         { // Detect apple
-            if (s.eat(a)) {
-                s.score.increment();
-                a.init(s);
+            if (w.eat(a)) {
+                w.score.increment();
+                a.init(w);
             } else {
-                s.moveTail();
+                w.moveTail();
             }
         }
 
         { // Detect crash
-            if (s.x < 0 or s.x >= SIZE or s.y < 0 or s.y >= SIZE) {
-                return s.crash();
+            if (w.x < 0 or w.x >= SIZE or w.y < 0 or w.y >= SIZE) {
+                return w.crash();
             }
 
-            var it = s.iter();
+            var it = w.iter();
 
             while (it.next()) |n| {
                 const i = (it.i + N - 1) % N;
 
-                if (i != s.head and s.x == n.x and s.y == n.y) {
-                    return s.crash();
+                if (i != w.head and w.x == n.x and w.y == n.y) {
+                    return w.crash();
                 }
             }
         }
     }
 
-    fn move(s: *Snake) void {
-        switch (s.d) {
-            .up => s.y -= 1,
-            .down => s.y += 1,
-            .left => s.x -= 1,
-            .right => s.x += 1,
+    fn move(w: *Worm) void {
+        switch (w.d) {
+            .up => w.y -= 1,
+            .down => w.y += 1,
+            .left => w.x -= 1,
+            .right => w.x += 1,
         }
 
-        s.moveHead(s.d);
+        w.moveHead(w.d);
     }
 
-    fn moveHead(self: *Snake, d: Dir) void {
-        const h = &self.nodes[self.head];
+    fn moveHead(w: *Worm, d: Dir) void {
+        const h = &w.nodes[w.head];
 
-        self.head = (self.head + 1) % N;
-        self.nodes[self.head] = h.copy(d);
+        w.head = (w.head + 1) % N;
+        w.nodes[w.head] = h.copy(d);
     }
 
-    fn moveTail(s: *Snake) void {
-        s.tail = (s.tail + 1) % N;
+    fn moveTail(w: *Worm) void {
+        w.tail = (w.tail + 1) % N;
     }
 
-    fn left(s: *Snake) void {
-        s.d = switch (s.d) {
+    fn left(w: *Worm) void {
+        w.d = switch (w.d) {
             .up => .left,
             .down => .right,
             .left => .down,
@@ -113,8 +113,8 @@ const Snake = struct {
         };
     }
 
-    fn right(s: *Snake) void {
-        s.d = switch (s.d) {
+    fn right(w: *Worm) void {
+        w.d = switch (w.d) {
             .up => .right,
             .down => .left,
             .left => .up,
@@ -122,27 +122,27 @@ const Snake = struct {
         };
     }
 
-    fn ai(s: *Snake, a: *Apple) void {
-        const try_f: i32 = s.state(a, .forward);
-        const try_l: i32 = s.state(a, .left);
-        const try_r: i32 = s.state(a, .right);
+    fn ai(w: *Worm, a: *Apple) void {
+        const try_f: i32 = w.state(a, .forward);
+        const try_l: i32 = w.state(a, .left);
+        const try_r: i32 = w.state(a, .right);
 
         if (try_f >= try_l and try_f >= try_r) {
             return; // Continue forward
         }
 
         if (try_l > try_r) {
-            s.left();
+            w.left();
         } else {
-            s.right();
+            w.right();
         }
     }
 
-    fn state(s: *Snake, a: *Apple, t: Try) i16 {
-        var tx: i16 = s.x;
-        var ty: i16 = s.y;
+    fn state(w: *Worm, a: *Apple, t: Try) i16 {
+        var tx: i16 = w.x;
+        var ty: i16 = w.y;
 
-        switch (s.d) {
+        switch (w.d) {
             .up => switch (t) {
                 .forward => ty -= 1,
                 .left => tx -= 1,
@@ -180,8 +180,8 @@ const Snake = struct {
         }
 
         { // Move towards apple
-            const dx: u16 = @abs(s.x - a.x);
-            const dy: u16 = @abs(s.y - a.y);
+            const dx: u16 = @abs(w.x - a.x);
+            const dy: u16 = @abs(w.y - a.y);
             const tdx: u16 = @abs(tx - a.x);
             const tdy: u16 = @abs(ty - a.y);
 
@@ -191,12 +191,12 @@ const Snake = struct {
         }
 
         { // TODO: Detect tail
-            var it = s.iter();
+            var it = w.iter();
 
             while (it.next()) |n| {
                 const i = (it.i + N - 1) % N;
 
-                if (i != s.head) {
+                if (i != w.head) {
                     if (tx == n.x and ty == n.y) {
                         reward += -500;
                     }
@@ -207,18 +207,18 @@ const Snake = struct {
         return reward;
     }
 
-    fn draw(s: *Snake, b: *w4.Button) void {
-        rect(s.x, s.y, 3);
+    fn draw(w: *Worm, b: *w4.Button) void {
+        rect(w.x, w.y, 3);
 
-        var it = s.iter();
+        var it = w.iter();
 
         while (it.next()) |n| {
             const i = (it.i + N - 1) % N;
 
             rect(n.x, n.y, 3);
 
-            if (i == s.head) {
-                set(s.x, s.y, 1, switch (s.d) {
+            if (i == w.head) {
+                set(w.x, w.y, 1, switch (w.d) {
                     .up => .{ .x = CELL / 2, .y = 1 },
                     .down => .{ .x = CELL / 2, .y = CELL - 2 },
                     .left => .{ .x = 1, .y = CELL / 2 },
@@ -261,7 +261,7 @@ const Snake = struct {
             }
         }
 
-        s.score.draw(b);
+        w.score.draw(b);
     }
 };
 
@@ -297,14 +297,23 @@ const Apple = struct {
     x: i16 = 0,
     y: i16 = 0,
 
-    fn init(a: *Apple, s: *Snake) void {
+    fn init(a: *Apple, w: *Worm) void {
         a.x = @mod(random.int(i16), SIZE);
         a.y = @mod(random.int(i16), SIZE);
 
-        var it = s.iter();
+        if ((a.x == SIZE and a.y == SIZE) or
+            (a.x == SIZE and a.y == 0) or
+            (a.x == 0 and a.y == SIZE) or
+            (a.x == 0 and a.y == 0))
+        {
+            a.x = 1 + @mod(random.int(i16), SIZE - 2);
+            a.y = 1 + @mod(random.int(i16), SIZE - 2);
+        }
+
+        var it = w.iter();
 
         while (it.next()) |n| {
-            if (a.x == n.x and a.y == n.y) a.init(s);
+            if (a.x == n.x and a.y == n.y) a.init(w);
         }
     }
 
@@ -339,7 +348,7 @@ var disk: Disk = .{};
 var time: i32 = 0;
 
 var apple: Apple = .{};
-var snake: Snake = .{};
+var snake: Worm = .{};
 
 var aiEnabled = true;
 
@@ -401,9 +410,9 @@ export fn update() void {
     button.update();
     input();
 
-    if (aiEnabled) snake.ai(&apple);
-
     time += 1;
+
+    if (aiEnabled) snake.ai(&apple);
 
     if (@mod(time, DELAY) == 0) {
         snake.detect(&apple);
@@ -505,21 +514,21 @@ const Node = struct {
 };
 
 const Iter = struct {
-    snake: *const Snake,
+    worm: *const Worm,
     i: usize,
 
     pub fn next(self: *Iter) ?Node {
-        if (self.i == (self.snake.head + 1) % N) return null;
+        if (self.i == (self.worm.head + 1) % N) return null;
 
-        const node = self.snake.nodes[self.i];
+        const node = self.worm.nodes[self.i];
         self.i = (self.i + 1) % N;
 
         return node;
     }
 
     pub fn peek(self: Iter) ?Node {
-        if (self.i == (self.snake.head + 1) % N) return null;
+        if (self.i == (self.worm.head + 1) % N) return null;
 
-        return self.snake.nodes[self.i];
+        return self.worm.nodes[self.i];
     }
 };
