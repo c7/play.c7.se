@@ -4,6 +4,14 @@ pub fn score(vol: i32) void {
     w4.tone(frequency(40, 930), duration(0, 0, 15, 0), volume(92, vol), flags(2, 0, 0));
 }
 
+pub fn aiOn(vol: i32) void {
+    w4.tone(frequency(150, 90), duration(0, 0, 15, 0), volume(92, vol), flags(1, 0, 0));
+}
+
+pub fn aiOff(vol: i32) void {
+    w4.tone(frequency(80, 150), duration(0, 0, 15, 0), volume(92, vol), flags(1, 0, 0));
+}
+
 pub fn crash(vol: i32) void {
     w4.tone(frequency(360, 90), duration(0, 0, 5, 0), volume(42, vol), flags(2, 0, 0));
 }

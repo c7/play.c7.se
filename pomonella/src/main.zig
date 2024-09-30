@@ -232,51 +232,74 @@ const Worm = struct {
 
             rect(n.x, n.y, 3);
 
+            const x: i32 = @intCast(n.x);
+            const y: i32 = @intCast(n.y);
+
+            const xc = x * CELL;
+            const yc = y * CELL;
+
             if (i == w.head) {
                 set(w.x, w.y, 1, switch (w.d) {
-                    .up => .{ .x = CELL / 2, .y = 1 },
+                    .up => .{ .x = CELL / 2 - 1, .y = 1 },
                     .down => .{ .x = CELL / 2, .y = CELL - 2 },
                     .left => .{ .x = 1, .y = CELL / 2 },
-                    .right => .{ .x = CELL - 2, .y = CELL / 2 },
+                    .right => .{ .x = CELL - 2, .y = CELL / 2 - 1 },
                 });
+
+                w4.color(1);
+
+                w4.pixel(xc + 1, yc + 1); // top left
+                w4.pixel((x + 1) * CELL - 2, yc + 1); // top right
+                w4.pixel(xc + 1, (y + 1) * CELL - 2); // bottom left
+                w4.pixel((x + 1) * CELL - 2, (y + 1) * CELL - 2); // bottom right
+
+                w4.color(3);
+
+                switch (w.d) {
+                    .up => {
+                        w4.rect(xc + 2, yc, 1, 1);
+                        w4.rect(xc + @as(i32, if (toggleFast) 4 else 3), yc - 1, 2, 2);
+                    },
+                    .down => {
+                        w4.rect(xc + 5, yc + 7, 1, 1);
+                        w4.rect(xc + @as(i32, if (toggleFast) 3 else 2), yc + 7, 2, 2);
+                    },
+                    .left => {
+                        w4.rect(xc, yc + 5, 1, 1);
+                        w4.rect(xc - 1, yc + @as(i32, if (toggleFast) 3 else 2), 2, 2);
+                    },
+                    .right => {
+                        w4.rect(xc + 7, yc + 2, 1, 1);
+                        w4.rect(xc + 7, yc + @as(i32, if (toggleFast) 4 else 3), 2, 2);
+                    },
+                }
             } else {
-                set(n.x, n.y, 1, switch (n.d) {
+                set(n.x, n.y, 4, switch (n.d) {
                     .up => .{ .x = CELL / 2, .y = CELL - 2 },
                     .down => .{ .x = CELL / 2, .y = 1 },
                     .left => .{ .x = CELL - 2, .y = CELL / 2 },
                     .right => .{ .x = 1, .y = CELL / 2 },
                 });
 
-                const x: i32 = @intCast(n.x);
-                const y: i32 = @intCast(n.y);
-
                 w4.color(1);
 
+                w4.pixel(xc + 1, yc + 1); // top left
+                w4.pixel((x + 1) * CELL - 2, yc + 1); // top right
+                w4.pixel(xc + 1, (y + 1) * CELL - 2); // bottom left
+                w4.pixel((x + 1) * CELL - 2, (y + 1) * CELL - 2); // bottom right
+
+                w4.color(3);
                 switch (n.d) {
-                    .up => {
-                        w4.pixel(x * CELL + 1, y * CELL + 1); // top left
-                        w4.pixel((x + 1) * CELL - 2, y * CELL + 1); // top right
-                    },
-                    .down => {
-                        w4.pixel(x * CELL + 1, (y + 1) * CELL - 2); // bottom left
-                        w4.pixel((x + 1) * CELL - 2, (y + 1) * CELL - 2); // bottom right
-                    },
-                    .left => {
-                        w4.pixel(x * CELL + 1, y * CELL + 1); // top left
-                        w4.pixel(x * CELL + 1, (y + 1) * CELL - 2); // bottom left
-                    },
-                    .right => {
-                        w4.pixel((x + 1) * CELL - 2, y * CELL + 1); // top right
-                        w4.pixel((x + 1) * CELL - 2, (y + 1) * CELL - 2); // bottom right
-                    },
+                    .up => w4.rect(xc + 3, yc + 7, 2, 2),
+                    .down => w4.rect(xc + 3, yc - 1, 2, 2),
+                    .left => w4.rect(xc + 7, yc + 3, 2, 2),
+                    .right => w4.rect(xc - 1, yc + 3, 2, 2),
                 }
 
                 w4.color(4);
-                w4.circle(x * CELL + 4, y * CELL + 4, 2);
+                w4.circle(xc + 4, yc + 4, 2);
             }
         }
-
-        w.score.draw();
     }
 };
 
@@ -297,32 +320,43 @@ const Score = struct {
         sfx.score(20);
     }
 
+    fn textWidth(n: u16) i32 {
+        if (n < 10) return 10;
+        if (n < 100) return 20;
+        if (n < 1000) return 30;
+        if (n < 10000) return 40;
+
+        return 50;
+    }
+
     fn draw(s: *Score) void {
         if (!scoreEnabled) return;
 
-        w4.color(if (@mod(time, 3) == 0) 4 else 3);
-        text("\x86{d}", 2, 2, .{disk.high()});
+        const high = disk.high();
 
-        w4.color(if (@mod(time, 3) == 0) 3 else 4);
-        text("\x85{d}", 2, 12, .{s.now});
+        w4.color(3);
+        text("\x86{d}", 2, 2, .{high});
+
+        w4.color(4);
+        text("\x85{d}", textWidth(high) + 6, 2, .{s.now});
     }
 };
 
 const Apple = struct {
-    x: i16 = 0,
-    y: i16 = 0,
+    x: i8 = 0,
+    y: i8 = 0,
 
     fn init(a: *Apple, w: *Worm) void {
-        a.x = @mod(random.int(i16), SIZE);
-        a.y = @mod(random.int(i16), SIZE);
+        a.x = @mod(random.int(i8), SIZE);
+        a.y = @mod(random.int(i8), SIZE);
 
         if ((a.x == SIZE - 1 and a.y == SIZE - 1) or
             (a.x == SIZE - 1 and a.y == 0) or
             (a.x == 0 and a.y == SIZE - 1) or
             (a.x == 0 and a.y == 0))
         {
-            a.x = 1 + @mod(random.int(i16), SIZE - 2);
-            a.y = 1 + @mod(random.int(i16), SIZE - 2);
+            a.x = 1 + @mod(random.int(i8), SIZE - 2);
+            a.y = 1 + @mod(random.int(i8), SIZE - 2);
         }
 
         var it = w.iter();
@@ -333,6 +367,9 @@ const Apple = struct {
     }
 
     fn draw(a: *Apple) void {
+        w4.color(0x22);
+        w4.circle(@as(i32, @intCast(a.x)) * CELL + 4, @as(i32, @intCast(a.y)) * CELL + 4, 5);
+
         rect(a.x, a.y, 4);
 
         const x: i32 = @intCast(a.x);
@@ -367,6 +404,8 @@ var worm: Worm = .{};
 
 var aiEnabled = true;
 var scoreEnabled = true;
+var toggleFast = true;
+var toggleSlow = true;
 
 fn grid() void {
     w4.color(0x21);
@@ -378,6 +417,30 @@ fn grid() void {
 
             w4.rect(x, y, CELL, CELL);
         }
+    }
+
+    if (false and aiEnabled) {
+        const ac = Vec{
+            .x = @as(i32, apple.x) * CELL + 4,
+            .y = @as(i32, apple.y) * CELL + 4,
+        };
+
+        const wc = Vec{
+            .x = @as(i32, @intCast(worm.x)) * CELL + 4,
+            .y = @as(i32, @intCast(worm.y)) * CELL + 4,
+        };
+
+        const p1 = wc.lerp(ac, 0.1);
+        const p2 = wc.lerp(ac, 0.2);
+        const p3 = wc.lerp(ac, 0.3);
+        const p4 = wc.lerp(ac, 0.4);
+
+        w4.color(if (toggleFast) 0x30 else 0x40);
+
+        p1.circle(2);
+        p2.circle(3);
+        p3.circle(4);
+        p4.circle(5);
     }
 }
 
@@ -442,11 +505,16 @@ fn toggleScore() void {
 
 fn toggleAi() void {
     aiEnabled = !aiEnabled;
+
+    if (aiEnabled) sfx.aiOn(50) else sfx.aiOff(50);
+
     w4.palette(palette());
 }
 
 fn draw() void {
     grid();
+
+    worm.score.draw();
     apple.draw();
     worm.draw();
 }
@@ -460,8 +528,12 @@ export fn update() void {
 
     input();
 
+    if (@mod(time, 5) == 0) toggleFast = !toggleFast;
+    if (@mod(time, 30) == 0) toggleSlow = !toggleSlow;
+
     if (@mod(time, DELAY) == 0) {
         worm.detect(&apple);
+        if (aiEnabled and !arrowHeld()) worm.ai(&apple);
         worm.move();
     }
 
@@ -500,6 +572,36 @@ pub const Try = enum {
 pub const Vec = struct {
     x: i32 = 0,
     y: i32 = 0,
+
+    fn lerp(v: Vec, o: Vec, t: f32) Vec {
+        const V = @Vector(2, f32);
+
+        const from: V = .{ @floatFromInt(v.x), @floatFromInt(v.y) };
+        const to: V = .{ @floatFromInt(o.x), @floatFromInt(o.y) };
+
+        const result = from + (to - from) * @as(V, @splat(t));
+
+        return .{
+            .x = @intFromFloat(result[0]),
+            .y = @intFromFloat(result[1]),
+        };
+    }
+
+    fn circle(v: Vec, r: u32) void {
+        w4.circle(v.x, v.y, r);
+    }
+
+    fn rect(v: Vec, w: u32, h: u32) void {
+        w4.rect(v.x, v.y, w, h);
+    }
+
+    fn add(v: Vec, o: Vec) Vec {
+        return .{ .x = v.x + o.x, .y = v.y + o.y };
+    }
+
+    fn mul(v: Vec, o: Vec) Vec {
+        return .{ .x = v.x * o.x, .y = v.y * o.y };
+    }
 };
 
 const Disk = struct {
