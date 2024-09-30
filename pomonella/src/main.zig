@@ -413,11 +413,11 @@ fn input() void {
     if (button.released(0, w4.BUTTON_2)) toggleScore();
 }
 
-fn arrowReleased() bool {
-    return button.released(0, w4.BUTTON_UP) or
-        button.released(0, w4.BUTTON_DOWN) or
-        button.released(0, w4.BUTTON_LEFT) or
-        button.released(0, w4.BUTTON_RIGHT);
+fn arrowHeld() bool {
+    return button.held(0, w4.BUTTON_UP) or
+        button.held(0, w4.BUTTON_DOWN) or
+        button.held(0, w4.BUTTON_LEFT) or
+        button.held(0, w4.BUTTON_RIGHT);
 }
 
 fn toggleScore() void {
@@ -441,7 +441,7 @@ export fn update() void {
 
     time += 1;
 
-    if (aiEnabled and !arrowReleased()) snake.ai(&apple);
+    if (aiEnabled and !arrowHeld()) snake.ai(&apple);
 
     if (@mod(time, DELAY) == 0) {
         snake.detect(&apple);
