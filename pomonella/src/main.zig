@@ -51,8 +51,8 @@ const Worm = struct {
         return ((w.head + N + 1) - w.tail) % N;
     }
 
-    pub fn iter(worm: *const Worm) Iter {
-        return .{ .worm = worm, .i = worm.tail };
+    pub fn iter(w: *const Worm) Iter {
+        return .{ .worm = w, .i = w.tail };
     }
 
     fn detect(w: *Worm, a: *Apple) void {
@@ -222,7 +222,7 @@ const Worm = struct {
         return reward;
     }
 
-    fn draw(w: *Worm, b: *w4.Button) void {
+    fn draw(w: *Worm) void {
         rect(w.x, w.y, 3);
 
         var it = w.iter();
@@ -276,7 +276,7 @@ const Worm = struct {
             }
         }
 
-        w.score.draw(b);
+        w.score.draw();
     }
 };
 
@@ -297,8 +297,7 @@ const Score = struct {
         sfx.score(20);
     }
 
-    fn draw(s: *Score, b: *w4.Button) void {
-        _ = b; // autofix
+    fn draw(s: *Score) void {
         if (!scoreEnabled) return;
 
         w4.color(if (@mod(time, 3) == 0) 4 else 3);
@@ -317,9 +316,9 @@ const Apple = struct {
         a.x = @mod(random.int(i16), SIZE);
         a.y = @mod(random.int(i16), SIZE);
 
-        if ((a.x == SIZE and a.y == SIZE) or
-            (a.x == SIZE and a.y == 0) or
-            (a.x == 0 and a.y == SIZE) or
+        if ((a.x == SIZE - 1 and a.y == SIZE - 1) or
+            (a.x == SIZE - 1 and a.y == 0) or
+            (a.x == 0 and a.y == SIZE - 1) or
             (a.x == 0 and a.y == 0))
         {
             a.x = 1 + @mod(random.int(i16), SIZE - 2);
@@ -364,7 +363,7 @@ var disk: Disk = .{};
 var time: i32 = 0;
 
 var apple: Apple = .{};
-var snake: Worm = .{};
+var worm: Worm = .{};
 
 var aiEnabled = true;
 var scoreEnabled = true;
@@ -388,7 +387,6 @@ fn palette() [4]u32 {
 
 export fn start() void {
     disk.increment();
-    disk.load();
 
     const starts = disk.starts();
 
@@ -400,15 +398,33 @@ export fn start() void {
         );
     }
 
-    snake.init();
-    apple.init(&snake);
+    worm.init();
+    apple.init(&worm);
 }
 
 fn input() void {
-    if (button.pressed(0, w4.BUTTON_UP) and snake.d != .down) snake.d = .up;
-    if (button.pressed(0, w4.BUTTON_DOWN) and snake.d != .up) snake.d = .down;
-    if (button.pressed(0, w4.BUTTON_LEFT) and snake.d != .right) snake.d = .left;
-    if (button.pressed(0, w4.BUTTON_RIGHT) and snake.d != .left) snake.d = .right;
+    var arrowPressed = false;
+
+    if (button.pressed(0, w4.BUTTON_UP) and worm.d != .down and !arrowPressed) {
+        arrowPressed = true;
+        worm.d = .up;
+    }
+
+    if (button.pressed(0, w4.BUTTON_DOWN) and worm.d != .up and !arrowPressed) {
+        arrowPressed = true;
+        worm.d = .down;
+    }
+
+    if (button.pressed(0, w4.BUTTON_LEFT) and worm.d != .right and !arrowPressed) {
+        arrowPressed = true;
+        worm.d = .left;
+    }
+
+    if (button.pressed(0, w4.BUTTON_RIGHT) and worm.d != .left and !arrowPressed) {
+        arrowPressed = true;
+        worm.d = .right;
+    }
+
     if (button.released(0, w4.BUTTON_1)) toggleAi();
     if (button.released(0, w4.BUTTON_2)) toggleScore();
 }
@@ -432,20 +448,21 @@ fn toggleAi() void {
 fn draw() void {
     grid();
     apple.draw();
-    snake.draw(&button);
+    worm.draw();
 }
 
 export fn update() void {
     button.update();
-    input();
 
     time += 1;
 
-    if (aiEnabled and !arrowHeld()) snake.ai(&apple);
+    if (aiEnabled and !arrowHeld()) worm.ai(&apple);
+
+    input();
 
     if (@mod(time, DELAY) == 0) {
-        snake.detect(&apple);
-        snake.move();
+        worm.detect(&apple);
+        worm.move();
     }
 
     draw();
@@ -489,9 +506,11 @@ const Disk = struct {
     data: [2]u16 = .{ 0, 0 },
 
     fn update(d: *Disk, score: u16) void {
+        disk.data[1] = 0;
+        disk.load();
+
         if (d.data[1] > score) return;
 
-        d.load();
         d.data[1] = score;
         d.save();
     }
@@ -507,6 +526,9 @@ const Disk = struct {
     }
 
     fn high(d: *Disk) u16 {
+        disk.data[1] = 0;
+        disk.load();
+
         return d.data[1];
     }
 
@@ -515,10 +537,6 @@ const Disk = struct {
     }
 
     fn save(d: *Disk) void {
-        if (snake.score.now > d.data[1]) {
-            d.data[1] = snake.score.now;
-        }
-
         _ = w4.diskw(@ptrCast(d), @sizeOf(@TypeOf(d)));
     }
 };
