@@ -1,4 +1,4 @@
-# aisnake :zap:
+# pomonella :apple:
 
 Using [Zig](https://ziglang.org/) to compile a `.wasm` cart
 for use in [WASM-4](https://wasm4.org/)

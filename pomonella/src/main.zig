@@ -22,10 +22,14 @@ const Snake = struct {
     fn crash(s: *Snake) void {
         sfx.crash(100);
 
+        aiEnabled = true;
+
         s.init();
     }
 
     fn init(s: *Snake) void {
+        w4.palette(palette());
+
         s.x = @mod(random.int(i8), (SIZE / 2)) + (SIZE / 4);
         s.y = @mod(random.int(i8), (SIZE / 2)) + (SIZE / 4);
         s.d = random.enumValue(Dir);
@@ -271,7 +275,7 @@ const Score = struct {
     }
 
     fn increment(s: *Score) void {
-        s.now += if (ai) 1 else 10;
+        s.now += if (aiEnabled) 1 else 10;
 
         disk.update(s.now);
 
@@ -337,7 +341,7 @@ var time: i32 = 0;
 var apple: Apple = .{};
 var snake: Snake = .{};
 
-var ai = true;
+var aiEnabled = true;
 
 fn grid() void {
     w4.color(0x21);
@@ -353,7 +357,7 @@ fn grid() void {
 }
 
 fn palette() [4]u32 {
-    return if (ai) pal.classy else pal.classy_alt;
+    return if (aiEnabled) pal.classy else pal.classy_alt;
 }
 
 export fn start() void {
@@ -370,8 +374,6 @@ export fn start() void {
         );
     }
 
-    w4.palette(palette());
-
     snake.init();
     apple.init(&snake);
 }
@@ -385,7 +387,7 @@ fn input() void {
 }
 
 fn toggleAi() void {
-    ai = !ai;
+    aiEnabled = !aiEnabled;
     w4.palette(palette());
 }
 
@@ -399,7 +401,7 @@ export fn update() void {
     button.update();
     input();
 
-    if (ai) snake.ai(&apple);
+    if (aiEnabled) snake.ai(&apple);
 
     time += 1;
 

@@ -1,5 +1,5 @@
-TITLE="aisnake"
-NAME=aisnake
+TITLE="Pomonella"
+NAME=pomonella
 ARCHIVE=${NAME}.zip
 GAME_URL=https://${HOSTNAME}/${NAME}
 SERVER_PATH=/var/www/play.c7.se/${NAME}

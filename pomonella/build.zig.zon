@@ -1,5 +1,5 @@
 .{
-    .name = "aisnake",
+    .name = "pomonella",
     .version = "0.0.0",
     .paths = .{""},
     .dependencies = .{
