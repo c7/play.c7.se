@@ -198,8 +198,23 @@ const Worm = struct {
 
                 if (i != w.head) {
                     if (tx == n.x and ty == n.y) {
-                        reward += -500;
+                        reward += -50;
                     }
+
+                    if (t == .forward and w.d == .up and tx == n.x and ty - 1 == n.y) reward += -10;
+                    if (t == .forward and w.d == .down and tx == n.x and ty + 1 == n.y) reward += -10;
+                    if (t == .forward and w.d == .left and tx - 1 == n.x and ty == n.y) reward += -10;
+                    if (t == .forward and w.d == .right and tx + 1 == n.x and ty == n.y) reward += -10;
+
+                    if (t == .left and w.d == .up and tx - 1 == n.x and ty - 1 == n.y) reward += -10;
+                    if (t == .left and w.d == .down and tx + 1 == n.x and ty + 1 == n.y) reward += -10;
+                    if (t == .left and w.d == .left and tx - 1 == n.x and ty + 1 == n.y) reward += -10;
+                    if (t == .left and w.d == .right and tx + 1 == n.x and ty - 1 == n.y) reward += -10;
+
+                    if (t == .right and w.d == .up and tx + 1 == n.x and ty - 1 == n.y) reward += -10;
+                    if (t == .right and w.d == .down and tx - 1 == n.x and ty + 1 == n.y) reward += -10;
+                    if (t == .right and w.d == .left and tx - 1 == n.x and ty - 1 == n.y) reward += -10;
+                    if (t == .right and w.d == .right and tx + 1 == n.x and ty + 1 == n.y) reward += -10;
                 }
             }
         }
@@ -283,12 +298,13 @@ const Score = struct {
     }
 
     fn draw(s: *Score, b: *w4.Button) void {
-        disk.load();
+        _ = b; // autofix
+        if (!scoreEnabled) return;
 
-        w4.color(if (b.held(0, w4.BUTTON_2) or @mod(time, 3) == 0) 4 else 3);
+        w4.color(if (@mod(time, 3) == 0) 4 else 3);
         text("\x86{d}", 2, 2, .{disk.high()});
 
-        w4.color(if (b.held(0, w4.BUTTON_2) or @mod(time, 3) == 0) 3 else 4);
+        w4.color(if (@mod(time, 3) == 0) 3 else 4);
         text("\x85{d}", 2, 12, .{s.now});
     }
 };
@@ -351,6 +367,7 @@ var apple: Apple = .{};
 var snake: Worm = .{};
 
 var aiEnabled = true;
+var scoreEnabled = true;
 
 fn grid() void {
     w4.color(0x21);
@@ -388,11 +405,23 @@ export fn start() void {
 }
 
 fn input() void {
-    if (button.pressed(0, w4.BUTTON_UP)) snake.d = .up;
-    if (button.pressed(0, w4.BUTTON_DOWN)) snake.d = .down;
-    if (button.pressed(0, w4.BUTTON_LEFT)) snake.d = .left;
-    if (button.pressed(0, w4.BUTTON_RIGHT)) snake.d = .right;
+    if (button.pressed(0, w4.BUTTON_UP) and snake.d != .down) snake.d = .up;
+    if (button.pressed(0, w4.BUTTON_DOWN) and snake.d != .up) snake.d = .down;
+    if (button.pressed(0, w4.BUTTON_LEFT) and snake.d != .right) snake.d = .left;
+    if (button.pressed(0, w4.BUTTON_RIGHT) and snake.d != .left) snake.d = .right;
     if (button.released(0, w4.BUTTON_1)) toggleAi();
+    if (button.released(0, w4.BUTTON_2)) toggleScore();
+}
+
+fn arrowReleased() bool {
+    return button.released(0, w4.BUTTON_UP) or
+        button.released(0, w4.BUTTON_DOWN) or
+        button.released(0, w4.BUTTON_LEFT) or
+        button.released(0, w4.BUTTON_RIGHT);
+}
+
+fn toggleScore() void {
+    scoreEnabled = !scoreEnabled;
 }
 
 fn toggleAi() void {
@@ -412,7 +441,7 @@ export fn update() void {
 
     time += 1;
 
-    if (aiEnabled) snake.ai(&apple);
+    if (aiEnabled and !arrowReleased()) snake.ai(&apple);
 
     if (@mod(time, DELAY) == 0) {
         snake.detect(&apple);
