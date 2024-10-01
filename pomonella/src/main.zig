@@ -338,7 +338,7 @@ const Score = struct {
         text("\x86{d}", 2, 2, .{high});
 
         w4.color(4);
-        text("\x85{d}", textWidth(high) + 6, 2, .{s.now});
+        text("\x85{d}", textWidth(high) + 8, 2, .{s.now});
     }
 };
 
