@@ -418,30 +418,6 @@ fn grid() void {
             w4.rect(x, y, CELL, CELL);
         }
     }
-
-    if (false and aiEnabled) {
-        const ac = Vec{
-            .x = @as(i32, apple.x) * CELL + 4,
-            .y = @as(i32, apple.y) * CELL + 4,
-        };
-
-        const wc = Vec{
-            .x = @as(i32, @intCast(worm.x)) * CELL + 4,
-            .y = @as(i32, @intCast(worm.y)) * CELL + 4,
-        };
-
-        const p1 = wc.lerp(ac, 0.1);
-        const p2 = wc.lerp(ac, 0.2);
-        const p3 = wc.lerp(ac, 0.3);
-        const p4 = wc.lerp(ac, 0.4);
-
-        w4.color(if (toggleFast) 0x30 else 0x40);
-
-        p1.circle(2);
-        p2.circle(3);
-        p3.circle(4);
-        p4.circle(5);
-    }
 }
 
 fn palette() [4]u32 {
@@ -576,10 +552,19 @@ pub const Vec = struct {
     fn lerp(v: Vec, o: Vec, t: f32) Vec {
         const V = @Vector(2, f32);
 
-        const from: V = .{ @floatFromInt(v.x), @floatFromInt(v.y) };
-        const to: V = .{ @floatFromInt(o.x), @floatFromInt(o.y) };
+        const from: V = .{
+            @floatFromInt(v.x),
+            @floatFromInt(v.y),
+        };
+        const to: V = .{
+            @floatFromInt(o.x),
+            @floatFromInt(o.y),
+        };
 
-        const result = from + (to - from) * @as(V, @splat(t));
+        const result = from + (to - from) * @as(
+            V,
+            @splat(t),
+        );
 
         return .{
             .x = @intFromFloat(result[0]),
