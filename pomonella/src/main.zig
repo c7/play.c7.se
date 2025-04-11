@@ -429,7 +429,7 @@ export fn start() void {
 
     const starts = disk.starts();
 
-    for (starts) |_| {
+    for (0..starts) |_| {
         _ = random.intRangeAtMost(
             usize,
             starts,
