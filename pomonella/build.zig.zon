@@ -1,5 +1,6 @@
 .{
-    .name = "pomonella",
+    .name = .pomonella,
+    .fingerprint = 0x94687cfab3c0fe05,
     .version = "0.0.0",
     .paths = .{""},
     .dependencies = .{
