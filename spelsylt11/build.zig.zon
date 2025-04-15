@@ -1,6 +1,7 @@
 .{
-    .name = "spelsylt11",
+    .name = .spelsylt11,
     .version = "0.0.0",
+    .fingerprint = 0x16b56f18f367caec,
     .paths = .{""},
     .dependencies = .{
         .w4 = .{

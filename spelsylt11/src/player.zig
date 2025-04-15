@@ -19,6 +19,6 @@ pub fn tick() void {
     C.w4on2_rt_tick(&runtime);
 }
 
-fn tone(freq: u32, dur: u32, vol: u32, fl: u32, _: ?*anyopaque) callconv(.C) void {
+fn tone(freq: u32, dur: u32, vol: u32, fl: u32, _: ?*anyopaque) callconv(.c) void {
     w4.tone(freq, dur, vol, fl);
 }
