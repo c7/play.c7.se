@@ -1,4 +1,4 @@
-# SSS: Stone, Shears, Scroll 🪨✂️📜
+# SSS: Stone, Scroll, Shears 🪨📜✂️
 
 _A minimalist, retro-inspired twist on the classic game._
 
@@ -98,3 +98,8 @@ Deploy:
 ```
 make deploy
 ```
+
+## Resources
+
+- <https://lospec.com/palette-list/aerugo> _(Palette from which the colors in the game were picked)_
+- <https://codeberg.org/edubart/wasm4-jam/src/branch/main/src/antcopter.nelua> _(Inspiration for the music player)_
